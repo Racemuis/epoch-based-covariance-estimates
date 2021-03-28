@@ -10,7 +10,7 @@ import numpy as np
 
 def generate_covariance(n_channels):
     """
-    Generate a symmetrical square matrix.
+    Generate a symmetrical square matrix. (Based on SP assignment 2).
 
     Parameters
     ----------
