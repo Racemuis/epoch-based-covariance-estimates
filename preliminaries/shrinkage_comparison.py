@@ -261,8 +261,26 @@ def get_summary_statistics_metric(metric, iterations):
         scores = [metric(estimate_covariance(epoch), targets[i]) for epoch in iterations[i]]
         mean_scm[i] = np.mean(scores)
         sem_scm[i] = np.std(scores)/np.sqrt(len(iterations[i]))
-        
+    print(mean_scm)    
     return mean_lw, mean_grid, mean_scm, sem_lw, sem_grid, sem_scm
+
+def generate_covariance(n_channels):
+    """
+    Generate a symmetrical square matrix. (Based on SP assignment 2).
+
+    Parameters
+    ----------
+    n_channels : int
+        The dimension of the matrix.
+
+    Returns
+    -------
+    covariance : ndarray of shape (n_channels, n_channels)
+        The generated symmetrical square matrix.
+    """
+    temp = np.random.randn(n_channels, n_channels)
+    covariance = np.dot(temp, temp.transpose()) 
+    return covariance
 
 # Set hyperparameters
 np.random.seed(42)
@@ -272,9 +290,14 @@ n_channels = 31
 n_samples = 71
 
 # Generate the data
-targets = [make_spd_matrix(n_channels) for i in range(n_iterations)]
+#targets = [make_spd_matrix(n_channels) for i in range(n_iterations)]
+targets = [generate_covariance(n_channels) for i in range(n_iterations)]
 iterations = [generate_epochs(n_epochs, n_samples, n_channels, t) for t in targets]
 
+for i in range(len(iterations)):
+    for epoch in iterations[i]:
+        print(distance_riemann(targets[i], estimate_covariance(epoch)))
+"""
 # Calculate the summary statistics for the shrinkage parameter values
 summary_statistics_lw = [get_summary_statistics(ledoit_wolf_parameter, i) for i in iterations]
 summary_statistics_grid = [get_summary_statistics(grid_search_parameter, iterations[i], target = targets[i]) for i in range(len(iterations))]
@@ -320,9 +343,10 @@ width = 0.3
 
 plt.bar(np.arange(len(iterations)), mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 2, width = width, align='center')
 plt.bar(np.arange(len(iterations))- width, mean_scm, yerr = sem_scm, label = 'Sample covariance matrix', capsize = 2, width = width, align='center', color='green')
-plt.bar(np.arange(len(iterations))+ width, mean_grid, yerr = sem_grid, label = 'shrinkage parameter with minimum MSE', capsize = 2, width = width,align='center')
+plt.bar(np.arange(len(iterations))+ width, mean_grid, yerr = sem_grid, label = 'Shrinkage parameter with minimum MSE', capsize = 2, width = width,align='center')
 plt.legend()
 plt.ylabel('Riemannian distance')
 plt.xlabel('Target covariance index')
 plt.title('The mean Riemannian distance per simulated target covariance matrix')
 plt.show()
+"""
