@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Figure 2.1:
 Generate eigenvalue spectra for different ratios of the number of samples
 with respect to the number of features. 
-
 
 TODO
 Add explanation for decisions. 
@@ -10,42 +10,7 @@ Created on Sun Mar 28 21:08:19 2021
 """
 from matplotlib import pyplot as plt
 import numpy as np
-
-def generate_covariance(n_channels):
-    """
-    Generate a symmetrical square matrix. (Based on SP assignment 2).
-
-    Parameters
-    ----------
-    n_channels : int
-        The dimension of the matrix.
-
-    Returns
-    -------
-    covariance : ndarray of shape (n_channels, n_channels)
-        The generated symmetrical square matrix.
-    """
-    temp = np.random.randn(n_channels, n_channels)
-    covariance = np.dot(temp, temp.transpose()) 
-    return covariance
-
-def estimate_covariance(x):
-    """
-    Estimate the covariance matrix from the sample data. 
-    
-    Parameters
-    ----------
-    x : ndarray of shape (n_samples, n_channels)
-        Input array.
-
-    Returns
-    -------
-    scm : ndarray of shape (n_channels, n_channels)
-        The estimated sample covariance matrix.
-    """
-    scm = 1/(x.shape[0]-1)
-    scm *= np.dot((x-np.mean(x, axis = 0)).transpose(), (x-np.mean(x, axis = 0)))
-    return scm
+from utilities import estimate_covariance, generate_covariance
     
 # Set hyperparameters
 np.random.seed(42)
@@ -54,7 +19,7 @@ n_samples = [10, 20, 50, 100, 200, 500]
 target = generate_covariance(n_channels)
 
 
-fig, axes = plt.subplots(2, 3)
+fig, axes = plt.subplots(2, 3, figsize =(6,4), dpi = 200)
 for i, ax in zip(range(len(n_samples)), axes.flatten()):
     # Generate data
     x = np.random.multivariate_normal(np.zeros(n_channels), target, n_samples[i])
@@ -62,6 +27,7 @@ for i, ax in zip(range(len(n_samples)), axes.flatten()):
     # Plot the eigenvaluespectrum of the sample covariance matrix
     scm = estimate_covariance(x)
     eigvals, _ = np.linalg.eig(scm)
+    print(eigvals)
     ax.plot(range(len(eigvals)), sorted(np.real(eigvals), reverse=True), label = 'Sample covariance matrix')
     
     # Plot the eigenvaluespectrum of the population covariance matrix

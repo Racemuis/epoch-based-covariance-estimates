@@ -10,6 +10,8 @@ from moabb.datasets import BNCI2015003 as bnci_2
 
 from datasets.spot_pilot import SpotPilotData
 
+from pyriemann.utils.base import invsqrtm, logm
+
 def get_benchmark_config(dataset_name, cfg_prepro, subjects=None, sessions=None, data_path = None):
     benchmark_cfg = dict()
     paradigm = P300(resample=cfg_prepro['sampling_rate'], fmin=cfg_prepro['fmin'], fmax=cfg_prepro['fmax'],
@@ -86,9 +88,48 @@ def verify_pd(X):
             np.linalg.cholesky(X)
         except LinAlgError:
             counter += 1
-    print(f'{X.shape[0]} matrices processed. There are {counter} non-SPD matrices.')
+    if counter > 0:
+        print(f'{X.shape[0]} matrices processed. There are {counter} non-SPD matrices.')
+        return False
+    else:
+        return True
     
-def shrinkage_regularization(x, technique, location, z_score):
+def tangent_space(covmats, Cref):
+    """
+    Project a set of covariance matrices in the tangent space, according to
+    the reference point Cref. Applies shrinkage to the matrix resulting from
+    Cref^(-1/2) \cdot C \cdot Cref^(-1/2), where C is an element of covmats.
+    
+    Retreived from pyriemann.utils.tangentspace, adapted by adding shrinkage.
+    
+    Parameters
+    ----------
+    covmats : np.ndarray
+        Covariance matrices set, Ntrials X Nchannels X Nchannels.
+    Cref : np.ndarray
+        The reference covariance matrix
+        
+    Returns
+    -------
+    T : np.ndarray
+        the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
+
+    """
+    Nt, Ne, Ne = covmats.shape
+    Cm12 = invsqrtm(Cref)
+    idx = np.triu_indices_from(Cref)
+    Nf = int(Ne * (Ne + 1) / 2)
+    T = np.empty((Nt, Nf))
+    coeffs = (np.sqrt(2) * np.triu(np.ones((Ne, Ne)), 1) +
+              np.eye(Ne))[idx]
+    for index in range(Nt):
+        tmp = np.dot(np.dot(Cm12, covmats[index, :, :]), Cm12)
+        tmp, _ = shrinkage_regularization(tmp, technique = 'ledoit-wolf', location = 'tangent space', z_score = True)
+        tmp = logm(tmp)
+        T[index, :] = np.multiply(coeffs, tmp[idx])
+    return T
+    
+def shrinkage_regularization(x, location, z_score, scope = None):
         """
         Apply shrinkage regularization.
     
@@ -96,18 +137,20 @@ def shrinkage_regularization(x, technique, location, z_score):
         ----------
         x : ndarray of shape (n_c, n_c)
             ndarray of covariance matrices for one trial.
-        technique : string, optional
-                the shrinkage regularization technique. 
-                Possible techniques:
-                    'ledoit-wolf'
-                    'grid'
-        location : string, optional
+        location : string
             the shrinkage location.
             Possible locations:
                 'manifold'
                 'tangent space'
         z_score : bool, optional
             True if z-scoring should be applied. 
+        scope : string, optional
+                the part of the matrix to which shrinkage regularization
+                needs to be applied. 
+                Possible scopes:
+                    'upper left'
+                    'lower right'
+                The default is None.
                     
         Returns
         -------
@@ -131,16 +174,22 @@ def shrinkage_regularization(x, technique, location, z_score):
         if location == 'manifold':
             eye = np.zeros((n,n))
             meanvar = 0
-            for i in range(n//2):
+            if scope == 'upper left':
+                r = range(n//2)
+            elif scope == 'lower right':
+                r = range(n//2, n)
+            else:
+                raise(ValueError("Invalid range for shrinkage. Valid locations are 'upper left' or 'lower right'."))
+            for i in r:
                 eye[i,i] = 1
-                #meanvar += sample[i,i]
-            #meanvar = meanvar/(n//2)
+                meanvar += sample[i,i]
+                
         elif location == 'tangent space':
             eye = np.identity(n)
             meanvar=np.mean(np.diagonal(sample))
         else:
             raise(ValueError("Invalid location for shrinkage. Valid locations are 'manifold' or 'tangent space'."))
-        meanvar=np.mean(np.diagonal(sample))
+        
         prior=meanvar*eye    	           
           
         # what we call p 

@@ -11,7 +11,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime as dt
 from utilities import get_benchmark_config
-from pipelines import manifold_shrinkage_pipeline
+from pipelines import response_shrinkage, tangent_space_LDA_shrinkage, prototype_shrinkage
 
 LOCAL_CONFIG_FILE = r'configurations/local_config.yaml'
 ANALYSIS_CONFIG_FILE = r'configurations/analysis_config.yaml'
@@ -87,7 +87,9 @@ bench_cfg = get_benchmark_config(dataset_name, prepro_cfg, subjects=subjects,
 labels_dict = {'Target': 1, 'NonTarget': 0}
 pipelines = dict()
 
-pipelines.update(manifold_shrinkage_pipeline())
+pipelines.update(tangent_space_LDA_shrinkage())
+pipelines.update(response_shrinkage())
+pipelines.update(prototype_shrinkage())
     
 ##############################################################################
 # Evaluation
@@ -100,7 +102,11 @@ evaluation = WithinSessionEvaluation(paradigm=bench_cfg['paradigm'], datasets=be
 results = evaluation.process(pipelines)
 
 ##############################################################################
-# Data handling
+# Plot results
+##############################################################################
+
+##############################################################################
+# Data Storage
 ##############################################################################
 
 identifier = f'{dataset_name}_subj_{subjects if subjects is not None else "all"}' \
