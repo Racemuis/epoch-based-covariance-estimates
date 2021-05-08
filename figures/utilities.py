@@ -160,3 +160,131 @@ def meshgrid_plane(x_0 = 0, y_0 = 0, length = 1):
     # Calculate plane
     z = (d - a*(x-x_0) - b*(y-y_0)) / c + z_0
     return x, y, z
+
+def shrinkage_regularization(x, location, z_score, scope = None):
+        """
+        Apply shrinkage regularization.
+    
+        Parameters
+        ----------
+        x : ndarray of shape (n_c, n_c)
+            ndarray of covariance matrices for one trial.
+        location : string
+            the shrinkage location.
+            Possible locations:
+                'manifold'
+                'tangent space'
+        z_score : bool, optional
+            True if z-scoring should be applied. 
+        scope : string, optional
+                the part of the matrix to which shrinkage regularization
+                needs to be applied. 
+                Possible scopes:
+                    'upper left'
+                    'lower right'
+                The default is None.
+                    
+        Returns
+        -------
+        sigma : ndarray of shape (n_c, n_c)
+                ndarray of the enhanced estimator for one trial.
+        shrinkage : float
+            The shrinkage parameter.
+            0 <= shrinkage <= 1.
+    
+        """
+        # de-mean returns
+        [t,n]=x.shape
+    
+        meanx=np.mean(x);
+        x=x-meanx
+        
+        # compute sample covariance matrix
+        sample = 1/t * np.dot(x.T, x)
+        
+        # compute prior
+        if location == 'manifold':
+            eye = np.zeros((n,n))
+            meanvar = 0
+            if scope == 'upper left':
+                r = range(n//2)
+            elif scope == 'lower right':
+                r = range(n//2, n)
+            else:
+                raise(ValueError("Invalid range for shrinkage. Valid locations are 'upper left' or 'lower right'."))
+            for i in r:
+                eye[i,i] = 1
+                meanvar += sample[i,i]
+                
+        elif location == 'tangent space':
+            eye = np.identity(n)
+            meanvar=np.mean(np.diagonal(sample))
+        else:
+            raise(ValueError("Invalid location for shrinkage. Valid locations are 'manifold' or 'tangent space'."))
+        
+        prior=meanvar*eye    	           
+          
+        # what we call p 
+        y=np.power(x, 2)			                    
+        phiMat=np.dot(y.T, y)/t-np.power(sample, 2)    
+        phi=np.sum(np.sum(phiMat))
+            
+        # what we call r is not needed for this shrinkage target
+        
+        # what we call c
+        gamma=np.linalg.norm(sample-prior,'fro')**2    
+      
+        # compute shrinkage constant
+        kappa=phi/gamma
+        shrinkage=max(0,min(1,kappa/t))
+        
+        # z-score covariance matrix
+        if z_score:
+            mean = np.mean(sample)
+            std = np.std(sample)
+            sample = (sample - mean)/std
+            prior = (prior - eye*mean)/std
+            
+            # compute shrinkage estimator
+            sigma=shrinkage*prior+(1-shrinkage)*sample
+            sigma = sigma * std + mean
+            
+        else: 
+            sigma=shrinkage*prior+(1-shrinkage)*sample
+
+        return sigma, shrinkage
+    
+    
+"""
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This function shrinkage_regularization is released under the BSD 2-clause license.
+
+% Copyright (c) 2014, Olivier Ledoit and Michael Wolf 
+% All rights reserved.
+% 
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions are
+% met:
+% 
+% 1. Redistributions of source code must retain the above copyright notice,
+% this list of conditions and the following disclaimer.
+% 
+% 2. Redistributions in binary form must reproduce the above copyright
+% notice, this list of conditions and the following disclaimer in the
+% documentation and/or other materials provided with the distribution.
+% 
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+% IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+% THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+% PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+% CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+% EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+% PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+% PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+"""
+
