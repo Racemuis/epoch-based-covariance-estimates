@@ -161,14 +161,72 @@ def meshgrid_plane(x_0 = 0, y_0 = 0, length = 1):
     z = (d - a*(x-x_0) - b*(y-y_0)) / c + z_0
     return x, y, z
 
+def ledoit_wolf(t, sub_matrix, sub_data, z_score):
+    """
+    Apply shrinkage regularization.
+
+    Parameters
+    ----------
+    t : int
+        the number of samples of sub_data.
+    sub_matrix : ndarray
+        the sub matrix in the covariance matrix that needs to be shrunk.
+    sub_data : ndarray
+        the data that corresponds to the sub matrix.
+    z_score : bool
+        True if z-scoring should be applied.
+
+    Returns
+    -------
+    sigma : ndarray of shape (n_c, n_c)
+        ndarray of the enhanced estimator for one trial.
+    shrinkage : float
+        The shrinkage parameter.
+        0 <= shrinkage <= 1.
+
+    """
+    # Compute prior
+    [sn,sn] = sub_matrix.shape
+    eye = np.zeros((sn,sn))
+    
+    meanvar=np.mean(np.diagonal(sub_matrix))
+    prior=meanvar*eye    	           
+      
+    y=np.power(sub_data, 2)			                    
+    phiMat=np.dot(y, y.T)/t-np.power(sub_matrix, 2)    
+    phi=np.sum(np.sum(phiMat))
+                
+    gamma=np.linalg.norm(sub_matrix-prior,'fro')**2    
+  
+    # Compute shrinkage constant
+    kappa=phi/gamma
+    shrinkage=max(0,min(1,kappa/t))
+    
+    # z-score covariance matrix
+    if z_score:
+        mean = np.mean(sub_matrix)
+        std = np.std(sub_matrix)
+        sub_matrix = (sub_matrix - mean)/std
+        prior = (prior - eye*mean)/std
+        
+        # Compute shrinkage estimator
+        sigma=shrinkage*prior+(1-shrinkage)*sub_matrix
+        sigma = sigma * std + mean
+        
+    else: 
+        sigma=shrinkage*prior+(1-shrinkage)*sub_matrix
+    
+    return sigma, shrinkage
+        
+
 def shrinkage_regularization(x, location, z_score, scope = None):
         """
         Apply shrinkage regularization.
     
         Parameters
         ----------
-        x : ndarray of shape (n_c, n_c)
-            ndarray of covariance matrices for one trial.
+        x : ndarray of shape (classes*2*n_channels, n_samples)
+            ndarray of spatially filtered prototype responses.
         location : string
             the shrinkage location.
             Possible locations:
@@ -182,6 +240,7 @@ def shrinkage_regularization(x, location, z_score, scope = None):
                 Possible scopes:
                     'upper left'
                     'lower right'
+                    'both'
                 The default is None.
                     
         Returns
@@ -194,65 +253,60 @@ def shrinkage_regularization(x, location, z_score, scope = None):
     
         """
         # de-mean returns
-        [t,n]=x.shape
+        [n,t]=x.shape
+        print("n: {} \nt: {}".format(n, t))
     
-        meanx=np.mean(x);
+        meanx=np.mean(x)
         x=x-meanx
         
-        # compute sample covariance matrix
-        sample = 1/t * np.dot(x.T, x)
+        # Compute sample covariance matrix
+        sample = 1/t * np.dot(x, x.T)
         
-        # compute prior
-        if location == 'manifold':
-            eye = np.zeros((n,n))
-            meanvar = 0
-            if scope == 'upper left':
-                r = range(n//2)
-            elif scope == 'lower right':
-                r = range(n//2, n)
-            else:
-                raise(ValueError("Invalid range for shrinkage. Valid locations are 'upper left' or 'lower right'."))
-            for i in r:
-                eye[i,i] = 1
-                meanvar += sample[i,i]
-                
+        if location == 'manifold' and scope == 'upper left':
+            # Extract submatrix
+            sub_matrix = sample[:n//2, :n//2]
+            sub_data = x[:n//2, :]
+            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
+            
+            # Put back submatrix
+            sample[:n//2, :n//2] = sigma
+            
+        elif location == 'manifold' and scope == 'lower right':
+            # Extract submatrix
+            sub_matrix = sample[n//2:n, n//2:n]
+            sub_data = x[n//2:n, :]
+            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
+            
+            # Put back submatrix
+            sample[n//2:n, n//2:n] = sigma
+        
+        elif location == 'manifold' and scope == 'both':
+            # Extract submatrix
+            sub_matrix = sample[n//2:n, n//2:n]
+            sub_data = x[n//2:n, :]
+            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
+            
+            # Put back submatrix
+            sample[n//2:n, n//2:n] = sigma
+            
+            # Extract submatrix
+            sub_matrix = sample[:n//2, :n//2]
+            sub_data = x[:n//2, :]
+            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
+            
+            # Put back submatrix
+            sample[:n//2, :n//2] = sigma
+            
+            
         elif location == 'tangent space':
-            eye = np.identity(n)
-            meanvar=np.mean(np.diagonal(sample))
+            sub_matrix = sample
+            sub_data = x
+            sample, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
+            
         else:
-            raise(ValueError("Invalid location for shrinkage. Valid locations are 'manifold' or 'tangent space'."))
+            raise(ValueError("Invalid location for shrinkage. Valid locations are 'manifold' with 'upper left', 'lower right' or 'both'', or 'tangent space'."))
         
-        prior=meanvar*eye    	           
-          
-        # what we call p 
-        y=np.power(x, 2)			                    
-        phiMat=np.dot(y.T, y)/t-np.power(sample, 2)    
-        phi=np.sum(np.sum(phiMat))
-            
-        # what we call r is not needed for this shrinkage target
-        
-        # what we call c
-        gamma=np.linalg.norm(sample-prior,'fro')**2    
-      
-        # compute shrinkage constant
-        kappa=phi/gamma
-        shrinkage=max(0,min(1,kappa/t))
-        
-        # z-score covariance matrix
-        if z_score:
-            mean = np.mean(sample)
-            std = np.std(sample)
-            sample = (sample - mean)/std
-            prior = (prior - eye*mean)/std
-            
-            # compute shrinkage estimator
-            sigma=shrinkage*prior+(1-shrinkage)*sample
-            sigma = sigma * std + mean
-            
-        else: 
-            sigma=shrinkage*prior+(1-shrinkage)*sample
-
-        return sigma, shrinkage
+        return sample, shrinkage
     
     
 """

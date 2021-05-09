@@ -5,7 +5,7 @@ from pyriemann.tangentspace import TangentSpace
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-from transformers import ShrinkageTransform
+from transformers import ShrinkageTransform, XdawnFilter
 from transformers import TangentSpace as TangentSpaceTransform
 
 def tangent_space_LDA_shrinkage(n_xdawn_components = 5):
@@ -44,6 +44,8 @@ def response_shrinkage(n_xdawn_components = 5):
 
     Parameters
     ----------
+    n_timepoints : int
+        the number of timepoints in a single epoch
     n_xdawn_components : int, optional
         the number of spatial xDawn filters. The dimension of the resulting
         covariance matrix is equal to (n_xdawn_components*n_classes)*2, where
@@ -59,7 +61,7 @@ def response_shrinkage(n_xdawn_components = 5):
     
     pipelines = dict()
 
-    pipe = Pipeline([('Covariance Estimation', XdawnCovariances(nfilter=n_xdawn_components, classes=[1])),
+    pipe = Pipeline([('Filtering', XdawnFilter(nfilter=n_xdawn_components, classes=[1])),
                      ('Shrinkage', ShrinkageTransform(location = 'manifold', scope = 'lower right')), 
                      ('Tangent Space Mapping', TangentSpace()),
                      ('LDA', LDA(solver = 'lsqr', shrinkage='auto'))])
@@ -90,9 +92,8 @@ def prototype_shrinkage(n_xdawn_components = 5):
     
     pipelines = dict()
 
-    pipe = Pipeline([('Covariance Estimation', XdawnCovariances(nfilter=n_xdawn_components, classes=[1])),
-                     ('Response', ShrinkageTransform(location = 'manifold', scope = 'lower right')), 
-                     ('Prototype', ShrinkageTransform(location = 'manifold', scope = 'upper left')), 
+    pipe = Pipeline([('Filtering', XdawnFilter(nfilter=n_xdawn_components, classes=[1])),
+                     ('Response & Prototype', ShrinkageTransform(location = 'manifold', scope = 'both')), 
                      ('Tangent Space Mapping', TangentSpace()),
                      ('LDA', LDA(solver = 'lsqr', shrinkage='auto'))])
     pipelines['Prototype shrinkage'] = pipe
