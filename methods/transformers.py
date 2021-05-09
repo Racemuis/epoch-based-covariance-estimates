@@ -20,8 +20,6 @@ class ShrinkageTransform(BaseEstimator, TransformerMixin):
                 'manifold'
                 'tangent space'
             The default is 'manifold'.
-        n_timepoints : int, optional
-            the number of timepoints in a single epoch.
         z_score : bool, optional
             True if z-scoring should be applied.
             The default is True.
