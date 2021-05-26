@@ -11,7 +11,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime as dt
 from utilities import get_benchmark_config
-from pipelines import response_shrinkage, tangent_space_LDA_shrinkage, prototype_shrinkage
+from pipelines import response_shrinkage, tangent_space_LDA, super_trial_shrinkage
 
 LOCAL_CONFIG_FILE = r'configurations/local_config.yaml'
 ANALYSIS_CONFIG_FILE = r'configurations/analysis_config.yaml'
@@ -28,7 +28,6 @@ with open(LOCAL_CONFIG_FILE, 'r') as conf_f:
 
 RESULTS_ROOT = Path(local_cfg['results_root'])
 DATA_PATH = local_cfg['data_root']
-#local_cfg['data_root']
 
 with open(ANALYSIS_CONFIG_FILE, 'r') as conf_f:
     ana_cfg = yaml.load(conf_f, Loader=yaml.FullLoader)
@@ -76,20 +75,18 @@ moabb.set_log_level('warn')
 np.random.seed(42)
 
 ##############################################################################
-# Create pipelines
+# Pipeline creation
 ##############################################################################
 
 prepro_cfg = ana_cfg['default']['data_preprocessing']
 
 bench_cfg = get_benchmark_config(dataset_name, prepro_cfg, subjects=subjects,
                                  sessions=sessions, data_path=DATA_PATH)
-
-labels_dict = {'Target': 1, 'NonTarget': 0}
 pipelines = dict()
 
-pipelines.update(tangent_space_LDA_shrinkage())
+pipelines.update(tangent_space_LDA())
 pipelines.update(response_shrinkage())
-pipelines.update(prototype_shrinkage())
+pipelines.update(super_trial_shrinkage())
     
 ##############################################################################
 # Evaluation
@@ -100,10 +97,6 @@ evaluation = WithinSessionEvaluation(paradigm=bench_cfg['paradigm'], datasets=be
                                       overwrite=True, random_state=8)
 
 results = evaluation.process(pipelines)
-
-##############################################################################
-# Plot results
-##############################################################################
 
 ##############################################################################
 # Data Storage

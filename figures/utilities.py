@@ -187,7 +187,7 @@ def ledoit_wolf(t, sub_matrix, sub_data, z_score):
     """
     # Compute prior
     [sn,sn] = sub_matrix.shape
-    eye = np.zeros((sn,sn))
+    eye = np.identity(sn)
     
     meanvar=np.mean(np.diagonal(sub_matrix))
     prior=meanvar*eye    	           
