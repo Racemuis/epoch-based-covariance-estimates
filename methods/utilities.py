@@ -286,6 +286,9 @@ def shrinkage_regularization(x, location, z_score, scope = None):
         elif location == 'tangent space':
             sub_data = x
             
+            # Transpose the data as ledoit_wolf takes n_samples x n_features
+            sub_data = sub_data.T
+            
             # z-score data
             sc = StandardScaler()  
             X = sc.fit_transform(sub_data)

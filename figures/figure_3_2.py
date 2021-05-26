@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Mar 27 19:14:01 2021
+
+Figure 3.2: The comparison of the shrinkage parameter, MSE and Riemannian dist-
+            ance for Ledoit-Wolf shrinkage and grid search.
 """
 
 from matplotlib import pyplot as plt
@@ -194,14 +197,13 @@ def get_summary_statistics_metric(metric, iterations):
             data = iterations[i][epoch]
             scm = estimate_covariance(data)
             
-            lw_matrix, rho = shrinkage_regularization(data, location = 'tangent space', z_score = True)
-            #lw_matrix  = shrink((scm-np.mean(scm))/np.std(scm),
-                                #rho)*np.std(scm)+np.mean(scm)
+            lw_matrix, rho = shrinkage_regularization(data.T, location = 'tangent space', z_score = True)
             scores_lw[epoch] = metric(lw_matrix, targets[i])
             
             
             grid_matrix = shrink((scm-np.mean(scm))/np.std(scm),
                                  grid_search_parameter(data, targets[i]))*np.std(scm)+np.mean(scm)
+            
             scores_grid[epoch] = metric(grid_matrix, targets[i])
             
             scores_scm[epoch] = metric(scm, targets[i])

@@ -6,6 +6,9 @@ Figure utilities
 """
 import numpy as np
 
+from sklearn.covariance import ledoit_wolf
+from sklearn.preprocessing import StandardScaler
+
 # Metrics
 def MSE(A, B, norm = 'fro'):
     """
@@ -160,63 +163,6 @@ def meshgrid_plane(x_0 = 0, y_0 = 0, length = 1):
     # Calculate plane
     z = (d - a*(x-x_0) - b*(y-y_0)) / c + z_0
     return x, y, z
-
-def ledoit_wolf(t, sub_matrix, sub_data, z_score):
-    """
-    Apply shrinkage regularization.
-
-    Parameters
-    ----------
-    t : int
-        the number of samples of sub_data.
-    sub_matrix : ndarray
-        the sub matrix in the covariance matrix that needs to be shrunk.
-    sub_data : ndarray
-        the data that corresponds to the sub matrix.
-    z_score : bool
-        True if z-scoring should be applied.
-
-    Returns
-    -------
-    sigma : ndarray of shape (n_c, n_c)
-        ndarray of the enhanced estimator for one trial.
-    shrinkage : float
-        The shrinkage parameter.
-        0 <= shrinkage <= 1.
-
-    """
-    # Compute prior
-    [sn,sn] = sub_matrix.shape
-    eye = np.identity(sn)
-    
-    meanvar=np.mean(np.diagonal(sub_matrix))
-    prior=meanvar*eye    	           
-      
-    y=np.power(sub_data, 2)			                    
-    phiMat=np.dot(y, y.T)/t-np.power(sub_matrix, 2)    
-    phi=np.sum(np.sum(phiMat))
-                
-    gamma=np.linalg.norm(sub_matrix-prior,'fro')**2    
-  
-    # Compute shrinkage constant
-    kappa=phi/gamma
-    shrinkage=max(0,min(1,kappa/t))
-    
-    # z-score covariance matrix
-    if z_score:
-        mean = np.mean(sub_matrix)
-        std = np.std(sub_matrix)
-        sub_matrix = (sub_matrix - mean)/std
-        prior = (prior - eye*mean)/std
-        
-        # Compute shrinkage estimator
-        sigma=shrinkage*prior+(1-shrinkage)*sub_matrix
-        sigma = sigma * std + mean
-        
-    else: 
-        sigma=shrinkage*prior+(1-shrinkage)*sub_matrix
-    
-    return sigma, shrinkage
         
 
 def shrinkage_regularization(x, location, z_score, scope = None):
@@ -225,7 +171,7 @@ def shrinkage_regularization(x, location, z_score, scope = None):
     
         Parameters
         ----------
-        x : ndarray of shape (classes*2*n_channels, n_samples)
+        x : ndarray of shape (n_features, n_samples)
             ndarray of spatially filtered prototype responses.
         location : string
             the shrinkage location.
@@ -254,91 +200,121 @@ def shrinkage_regularization(x, location, z_score, scope = None):
         """
         # de-mean returns
         [n,t]=x.shape
-        print("n: {} \nt: {}".format(n, t))
     
         meanx=np.mean(x)
-        x=x-meanx
+        x_s=x-meanx
         
         # Compute sample covariance matrix
-        sample = 1/t * np.dot(x, x.T)
+        sample = 1/t * np.dot(x_s, x_s.T)
         
         if location == 'manifold' and scope == 'upper left':
-            # Extract submatrix
-            sub_matrix = sample[:n//2, :n//2]
+            # Extract subdata
             sub_data = x[:n//2, :]
-            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
             
-            # Put back submatrix
+            # Transpose the data as ledoit_wolf takes n_samples x n_features
+            sub_data = sub_data.T
+            
+            if z_score:
+                # z-score data
+                sc = StandardScaler()  
+                X = sc.fit_transform(sub_data)
+            
+            # Apply shrinkage
+            sigma, shrinkage = ledoit_wolf(X)
+            
+            if z_score:
+                # Rescale
+                sigma = sc.scale_[:, np.newaxis] * sigma * sc.scale_[np.newaxis, :]
+            
+            # Transpose is not needed because sigma is symmetric            
+            
+            # Replace submatrix
             sample[:n//2, :n//2] = sigma
             
         elif location == 'manifold' and scope == 'lower right':
-            # Extract submatrix
-            sub_matrix = sample[n//2:n, n//2:n]
+            # Extract subdata
             sub_data = x[n//2:n, :]
-            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
             
-            # Put back submatrix
+            # Transpose the data as ledoit_wolf takes n_samples x n_features
+            sub_data = sub_data.T
+            
+            if z_score:
+                # z-score data
+                sc = StandardScaler()  
+                X = sc.fit_transform(sub_data)
+            
+            # Apply shrinkage
+            sigma, shrinkage = ledoit_wolf(X)
+            
+            if z_score:
+                # Rescale
+                sigma = sc.scale_[:, np.newaxis] * sigma * sc.scale_[np.newaxis, :]
+                        
+            # Replace submatrix
             sample[n//2:n, n//2:n] = sigma
         
         elif location == 'manifold' and scope == 'both':
-            # Extract submatrix
-            sub_matrix = sample[n//2:n, n//2:n]
+            # Extract subdata; bottom right
             sub_data = x[n//2:n, :]
-            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
             
-            # Put back submatrix
+            # Transpose the data as ledoit_wolf takes n_samples x n_features
+            sub_data = sub_data.T
+            
+            if z_score:
+                # z-score data
+                sc = StandardScaler()  
+                X = sc.fit_transform(sub_data)
+            
+            # Apply shrinkage
+            sigma, shrinkage = ledoit_wolf(X)
+            
+            if z_score:
+                # Rescale
+                sigma = sc.scale_[:, np.newaxis] * sigma * sc.scale_[np.newaxis, :]
+            
+            # Replace submatrix
             sample[n//2:n, n//2:n] = sigma
             
-            # Extract submatrix
-            sub_matrix = sample[:n//2, :n//2]
+            # Extract subdata; top left
             sub_data = x[:n//2, :]
-            sigma, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
             
-            # Put back submatrix
+            # Transpose the data as ledoit_wolf takes n_samples x n_features
+            sub_data = sub_data.T
+            
+            if z_score:
+                # z-score data
+                sc = StandardScaler()  
+                X = sc.fit_transform(sub_data)
+            
+            # Apply shrinkage
+            sigma, shrinkage = ledoit_wolf(X)
+            
+            if z_score:
+                # Rescale
+                sigma = sc.scale_[:, np.newaxis] * sigma * sc.scale_[np.newaxis, :]
+            
+            # Replace submatrix
             sample[:n//2, :n//2] = sigma
             
             
         elif location == 'tangent space':
-            sub_matrix = sample
             sub_data = x
-            sample, shrinkage = ledoit_wolf(t, sub_matrix, sub_data, z_score)
+            
+            # Transpose the data as ledoit_wolf takes n_samples x n_features
+            sub_data = sub_data.T
+            
+            # z-score data
+            sc = StandardScaler()  
+            X = sc.fit_transform(sub_data)
+            
+            # Apply shrinkage
+            sigma, shrinkage = ledoit_wolf(X)
+            
+            # Rescale
+            sample = sc.scale_[:, np.newaxis] * sigma * sc.scale_[np.newaxis, :]
             
         else:
             raise(ValueError("Invalid location for shrinkage. Valid locations are 'manifold' with 'upper left', 'lower right' or 'both'', or 'tangent space'."))
         
         return sample, shrinkage
-    
-    
-"""
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This function shrinkage_regularization is released under the BSD 2-clause license.
-
-% Copyright (c) 2014, Olivier Ledoit and Michael Wolf 
-% All rights reserved.
-% 
-% Redistribution and use in source and binary forms, with or without
-% modification, are permitted provided that the following conditions are
-% met:
-% 
-% 1. Redistributions of source code must retain the above copyright notice,
-% this list of conditions and the following disclaimer.
-% 
-% 2. Redistributions in binary form must reproduce the above copyright
-% notice, this list of conditions and the following disclaimer in the
-% documentation and/or other materials provided with the distribution.
-% 
-% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-% IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-% THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-% PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-% CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-% EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-% PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-% PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-% LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-"""
 

@@ -4,8 +4,6 @@ Figure 2.1:
 Generate eigenvalue spectra for different ratios of the number of samples
 with respect to the number of features. 
 
-TODO
-Add explanation for decisions. 
 Created on Sun Mar 28 21:08:19 2021
 """
 from matplotlib import pyplot as plt
