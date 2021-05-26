@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed May 12 16:07:41 2021
+
+Verify the distribution of the scores, and carry out an appropriate statistical
+test.
 """
 import pandas as pd
 import numpy as np
