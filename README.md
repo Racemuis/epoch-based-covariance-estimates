@@ -1,4 +1,4 @@
-# Epoch based covariance matrices
+# Epoch-based covariance matrices
 This is the repository where I store the code that I have used for my Bachelor thesis. This repository includes files with which I have generated the figures for my thesis and my presentation, as well as the source code of my methods and results sections. 
 
 ## References & Licenses
