@@ -11,7 +11,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import yaml
 import glob
-from datasets.spot_pilot import SpotPilotData
+
+import os
+os.chdir('..')
+
+from methods.datasets.spot_pilot import SpotPilotData
 
 mne.set_log_level(False)
 

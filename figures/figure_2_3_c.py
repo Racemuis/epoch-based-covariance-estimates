@@ -11,7 +11,7 @@ from utilities import meshgrid_sphere, meshgrid_plane
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 
-fig = plt.figure(figsize=(6,6))
+fig = plt.figure(figsize=(6,6), dpi = 200)
 ax = fig.gca(projection='3d')
 
 x, y, z = meshgrid_sphere()
@@ -21,8 +21,8 @@ x,y,z = meshgrid_plane(0, 1, 1.5)
 surf = ax.plot_surface(x, y, z, color = 'orange', linewidth=1, rstride=1, cstride=2, alpha = 0.9, label = 'Tangent space')
 
 # fix legend for surfplot
-surf._facecolors2d=surf._facecolors3d
-surf._edgecolors2d=surf._edgecolors3d
+surf._facecolors2d = surf._facecolor3d
+surf._edgecolors2d = surf._edgecolor3d
 
 ax.axes.xaxis.set_ticklabels([])
 ax.axes.yaxis.set_ticklabels([])

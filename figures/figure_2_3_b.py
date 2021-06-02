@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 
 x, y, z = meshgrid_sphere()
-fig = plt.figure(figsize=(6,6))
+fig = plt.figure(figsize=(6,6), dpi = 200)
 ax = fig.gca(projection='3d')
 
 ax.plot_wireframe(x,y,z, linewidth=1, rstride=1, cstride=2, label = 'Manifold')

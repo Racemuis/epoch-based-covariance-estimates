@@ -18,8 +18,6 @@ from utilities import shrinkage_regularization
 # For sanity check
 from pyriemann.estimation import XdawnCovariances
 
-
-
 mne.set_log_level(False)
 
 def covariance(x):
@@ -93,9 +91,9 @@ for response, i in zip([non_target, target], range(2)):
     fig, axes = plt.subplots(1, 3, figsize =(30,10), dpi = 200)
     cbar_ax = fig.add_axes([.91, .2, .03, 0.6])
     
-    axes[0].set_title("Tangent Space LDA", size = 20)
-    axes[1].set_title("Response Shrinkage", size = 20)
-    axes[2].set_title("Super-trial Shrinkage", size = 20)
+    axes[0].set_title("Tangent Space LDA", size = 20, color = 'tab:blue')
+    axes[1].set_title("Response Shrinkage", size = 20, color = 'tab:orange')
+    axes[2].set_title("Super-trial Shrinkage", size = 20, color = 'tab:green')
     
     fig.text(0.5, 0.1, 'Virtual channel', ha='center', size = 20)
     fig.text(0.1, 0.5, 'Virtual channel', va='center', rotation='vertical', size = 20)
