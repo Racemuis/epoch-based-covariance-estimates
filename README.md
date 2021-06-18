@@ -26,6 +26,8 @@ E.g. `python main_moab_pipeline.py spot_single 0:0` for the first session of the
 
 _Note that it is important to activate the right conda environment prior to running the command above. This can be done using_ `conda activate thesis`.<br>
 
+The results are automatically stored in a .csv file.
+
 ## References & Licenses
 My methods are based on the paper listed at [1]. The source files that accompany the paper are released under the MIT license. They can be found in the [following repository](https://github.com/jsosulski/time-decoupled-lda). Moreover, this project relies heavily on the [pyRiemann library](https://zenodo.org/record/18982#.YLdhSKgzZPY) [2] and the [Mother of All BCI Benchmarks (MOABB)](https://github.com/NeuroTechX/moabb) [3]. As the firstmentioned source files did not come in a pip-able package, I had to copy some of the files to my own repository. The license has been reproduced in the corresponding source files. 
 
