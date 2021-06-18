@@ -14,7 +14,7 @@ plt.style.use('default')
 import scipy
 print(scipy.__version__)
 
-path = r'./results/bnci_1.csv'
+path = r'./path/to/file'
 df = pd.read_csv(path)
 pipelines = df['pipeline'].unique()
 
