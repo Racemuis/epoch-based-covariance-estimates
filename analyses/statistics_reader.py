@@ -10,7 +10,7 @@ import numpy as np
 integers = regex.compile('^([0-9]*)'+ '\s*' +'([0-9]*)$')
 doubles = regex.compile('^([0-9]*\.*[0-9]*)'+ '\s*' +'([0-9]*)$')
 
-with open('./results/new_stats/spd_bnci_1_resp.txt') as f:
+with open('./path/to/file') as f:
     lines = f.readlines()
 
 first = np.zeros(len(lines))
