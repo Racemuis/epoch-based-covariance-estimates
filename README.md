@@ -9,7 +9,7 @@ The source code for this project is written in python. To let anyone obtain the 
 All figures and analyses are standalone files. To use them, one can change the `./path/to/file` placeholders with the desired trajectory.
 
 ### Methods
-To run the analyses that correspond to the _Methods_ Chapter of the thesis, one can run the file `methods/main_moabb_pipeline.py` in a python command line. The file is depedent on the local configurations that are set up in `methods/configurations/local_config.yaml`, hence, ensure that this file is filled in. Next `main_moabb_pipeline.py` takes 3 arguments: 
+To run the analyses that correspond to the _Methods_ Chapter of the thesis, one can run the file `methods/main_moabb_pipeline.py` in a python command line. The file is depedent on the local configurations that are set up in `methods/configurations/local_config.yaml`, hence, ensure that this file is filled in. Next, `main_moabb_pipeline.py` takes 3 arguments: 
 1. The dataset, possible datasets are:
     - spot_single
     - epfl
