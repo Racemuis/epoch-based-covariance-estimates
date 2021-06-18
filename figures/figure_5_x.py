@@ -13,7 +13,7 @@ from strip import plot_matched
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.serif'] = ['Computer Modern Roman']
 
-path = r'./results/spot.csv'
+path = r'./path/to/file'
 dataframe = pd.read_csv(path)
 
 
