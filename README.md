@@ -21,7 +21,8 @@ To run the analyses that correspond to the _Methods_ Chapter of the thesis, one 
 2. The subjects
 3. The sessions
 
-Hence, the file can be run by typing `python main_moab_pipeline.py <dataset> <subject:session>`. E.g. `python main_moab_pipeline.py spot_single 0:1` for the first subject of the SPOT dataset. <br>
+Hence, the file can be run by typing `python main_moab_pipeline.py <dataset> <subject:session>`.<br>
+E.g. `python main_moab_pipeline.py spot_single 0:1` for the first session of the first subject of the SPOT dataset. <br>
 
 _Note that it is important to activate the right conda environment prior to running the command above. This can be done using_ `conda activate thesis`.<br>
 
