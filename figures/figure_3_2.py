@@ -11,6 +11,9 @@ import numpy as np
 from pyriemann.utils.distance import distance_riemann
 from utilities import estimate_covariance, generate_covariance, MSE, shrinkage_regularization
 
+plt.rcParams['legend.title_fontsize'] = 'x-large'
+plt.rc('xtick', labelsize='x-large') 
+plt.rc('ytick', labelsize='x-large') 
 
 def ledoit_wolf_parameter(x):
     """
@@ -201,8 +204,7 @@ def get_summary_statistics_metric(metric, iterations):
             scores_lw[epoch] = metric(lw_matrix, targets[i])
             
             
-            grid_matrix = shrink((scm-np.mean(scm))/np.std(scm),
-                                 grid_search_parameter(data, targets[i]))*np.std(scm)+np.mean(scm)
+            grid_matrix = shrink(scm, grid_search_parameter(data, targets[i]))
             
             scores_grid[epoch] = metric(grid_matrix, targets[i])
             
@@ -221,10 +223,10 @@ def get_summary_statistics_metric(metric, iterations):
 
 # Set hyperparameters
 np.random.seed(42)
-n_iterations = 50
-n_epochs = 60
+n_iterations = 20
+n_epochs = 100
 n_channels = 31
-n_samples = 71
+n_samples = 100
 
 # Generate the data
 targets = [generate_covariance(n_channels) for i in range(n_iterations)]
@@ -239,45 +241,47 @@ mean_lw, sem_lw = zip(*summary_statistics_lw)
 mean_grid, sem_grid = zip(*summary_statistics_grid)
 
 # Plot the observations
-plt.figure(figsize=(20, 4))
+plt.figure(figsize=(20, 4), dpi = 200)
 width = 0.4
 
-plt.bar(np.arange(len(iterations)) - width/2, mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 3, width = width)
-plt.bar(np.arange(len(iterations)) + width/2, mean_grid, yerr = sem_grid, label = 'shrinkage parameter with minimum MSE', capsize = 3, width = width)
-plt.legend()
-plt.ylabel('Mean shrinkage parameter value')
-plt.xlabel('Target covariance index')
-plt.title('The mean shrinkage parameter per simulated target covariance matrix')
+plt.bar(np.linspace(1,len(iterations), 20) - width/2, mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 3, width = width)
+plt.bar(np.linspace(1,len(iterations), 20) + width/2, mean_grid, yerr = sem_grid, label = 'Shrinkage parameter with minimum MSE', capsize = 3, width = width)
+plt.ylim(0,max([max(mean_lw), max(mean_grid)]) * 1.4)
+plt.legend(title = 'Method', loc = 'upper right', fontsize = 'x-large')
+plt.ylabel('Mean shrinkage parameter value',  fontsize = 'xx-large')
+plt.xlabel('Target covariance index',  fontsize = 'xx-large')
+plt.title('The mean shrinkage parameter per simulated target covariance matrix\n{} features & {} samples'.format(n_channels, n_samples),  fontsize = 'xx-large')
 plt.show()
 
 # Calculate the summary statstics for the MSE
 mean_lw, mean_grid, mean_scm , sem_lw, sem_grid, sem_scm = get_summary_statistics_metric(MSE, iterations)
     
 # Plot the observations
-plt.figure(figsize=(20, 4))
+plt.figure(figsize=(20, 4), dpi = 200)
 width = 0.3
-
-plt.bar(np.arange(len(iterations)), mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 2, width = width, align='center')
-plt.bar(np.arange(len(iterations))- width, mean_scm, yerr = sem_scm, label = 'Sample covariance matrix', capsize = 2, width = width, align='center', color='green')
-plt.bar(np.arange(len(iterations))+ width, mean_grid, yerr = sem_grid, label = 'shrinkage parameter with minimum MSE', capsize = 2, width = width,align='center')
-plt.legend()
-plt.ylabel('Mean Squared Error')
-plt.xlabel('Target covariance index')
-plt.title('The mean MSE per simulated target covariance matrix')
+plt.bar(np.linspace(1,len(iterations), 20), mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 2, width = width, align='center')
+plt.bar(np.linspace(1,len(iterations), 20)- width, mean_scm, yerr = sem_scm, label = 'Sample covariance matrix', capsize = 2, width = width, align='center', color='green')
+plt.bar(np.linspace(1,len(iterations), 20)+ width, mean_grid, yerr = sem_grid, label = 'Shrinkage parameter with minimum MSE', capsize = 2, width = width,align='center')
+plt.ylim(0,max([max(mean_lw), max(mean_grid), max(mean_scm)]) * 1.4)
+plt.legend(title = 'Method',loc = 'upper right', fontsize = 'x-large')
+plt.ylabel('Mean Squared Error', fontsize = 'xx-large')
+plt.xlabel('Target covariance index', fontsize = 'xx-large')
+plt.title('The mean MSE per simulated target covariance matrix\n{} features & {} samples'.format(n_channels, n_samples), fontsize = 'xx-large')
 plt.show()
 
 # Calculate the summary statstics for the Riemannian distance
 mean_lw, mean_grid, mean_scm , sem_lw, sem_grid, sem_scm = get_summary_statistics_metric(distance_riemann, iterations)
     
 # Plot the observations
-plt.figure(figsize=(20, 4))
+plt.figure(figsize=(20, 4), dpi = 200)
 width = 0.3
 
-plt.bar(np.arange(len(iterations)), mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 2, width = width, align='center')
-plt.bar(np.arange(len(iterations))- width, mean_scm, yerr = sem_scm, label = 'Sample covariance matrix', capsize = 2, width = width, align='center', color='green')
-plt.bar(np.arange(len(iterations))+ width, mean_grid, yerr = sem_grid, label = 'shrinkage parameter with minimum MSE', capsize = 2, width = width,align='center')
-plt.legend()
-plt.ylabel('Riemannian distance')
-plt.xlabel('Target covariance index')
-plt.title('The mean Riemannian distance per simulated target covariance matrix')
+plt.bar(np.linspace(1,len(iterations), 20), mean_lw, yerr = sem_lw, label = 'Ledoit-Wolf',  capsize = 2, width = width, align='center')
+plt.bar(np.linspace(1,len(iterations), 20)- width, mean_scm, yerr = sem_scm, label = 'Sample covariance matrix', capsize = 2, width = width, align='center', color='green')
+plt.bar(np.linspace(1,len(iterations), 20)+ width, mean_grid, yerr = sem_grid, label = 'Shrinkage parameter with minimum MSE', capsize = 2, width = width,align='center')
+plt.ylim(0,max([max(mean_lw), max(mean_grid), max(mean_scm)]) * 1.1)
+plt.legend(title = 'Method',  loc = 'upper right', fontsize = 'x-large')
+plt.ylabel('Riemannian distance',  fontsize = 'xx-large')
+plt.xlabel('Target covariance index',  fontsize = 'xx-large')
+plt.title('The mean Riemannian distance per simulated target covariance matrix\n{} features & {} samples'.format(n_channels, n_samples),  fontsize = 'xx-large')
 plt.show()
